@@ -251,10 +251,6 @@ A/B OTA specific options
 
   --max_threads
       Specify max number of threads allowed when generating A/B OTA
-
-  --backup <boolean>
-      Enable or disable the execution of backuptool.sh.
-      Disabled by default.
 """
 
 from __future__ import print_function
@@ -329,7 +325,6 @@ OPTIONS.enable_lz4diff = False
 OPTIONS.vabc_compression_param = None
 OPTIONS.security_patch_level = None
 OPTIONS.max_threads = None
-OPTIONS.backuptool = False
 
 
 POSTINSTALL_CONFIG = 'META/postinstall_config.txt'
@@ -1092,6 +1087,8 @@ def GenerateAbOtaPackage(target_file, output_file, source_file=None):
       # ZIP_STORED.
       common.ZipWriteStr(output_zip, care_map_name, care_map_data,
                          compress_type=zipfile.ZIP_STORED)
+      # break here to avoid going into else when care map has been handled
+      break
     else:
       logger.warning("Cannot find care map file in target_file package")
 
@@ -1230,8 +1227,6 @@ def main(argv):
       else:
         raise ValueError("Cannot parse value %r for option %r - only "
                          "integers are allowed." % (a, o))
-    elif o == "--backup":
-      OPTIONS.backuptool = True
     else:
       return False
     return True
@@ -1284,7 +1279,6 @@ def main(argv):
                                  "vabc_compression_param=",
                                  "security_patch_level=",
                                  "max_threads=",
-                                 "backup=",
                              ], extra_option_handler=option_handler)
   common.InitLogging()
 

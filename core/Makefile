@@ -1924,11 +1924,9 @@ $(if $(BOARD_$(_var)IMAGE_SQUASHFS_COMPRESSOR),$(hide) echo "$(1)_squashfs_compr
 $(if $(BOARD_$(_var)IMAGE_SQUASHFS_COMPRESSOR_OPT),$(hide) echo "$(1)_squashfs_compressor_opt=$(BOARD_$(_var)IMAGE_SQUASHFS_COMPRESSOR_OPT)" >> $(2))
 $(if $(BOARD_$(_var)IMAGE_SQUASHFS_DISABLE_4K_ALIGN),$(hide) echo "$(1)_squashfs_disable_4k_align=$(BOARD_$(_var)IMAGE_SQUASHFS_DISABLE_4K_ALIGN)" >> $(2))
 $(if $(PRODUCT_$(_var)_BASE_FS_PATH),$(hide) echo "$(1)_base_fs_file=$(PRODUCT_$(_var)_BASE_FS_PATH)" >> $(2))
-$(if $(filter true,$(AB_OTA_UPDATER)),,\
-    $(eval _size := $(BOARD_$(_var)IMAGE_PARTITION_SIZE))
-    $(eval _reserved := $(BOARD_$(_var)IMAGE_PARTITION_RESERVED_SIZE))
-    $(eval _headroom := $(PRODUCT_$(_var)_HEADROOM))
-)
+$(eval _size := $(BOARD_$(_var)IMAGE_PARTITION_SIZE))
+$(eval _reserved := $(BOARD_$(_var)IMAGE_PARTITION_RESERVED_SIZE))
+$(eval _headroom := $(PRODUCT_$(_var)_HEADROOM))
 $(if $(or $(_size), $(_reserved), $(_headroom)),,
     $(hide) echo "$(1)_disable_sparse=true" >> $(2))
 $(call add-common-flags-to-image-props,$(1),$(2))
@@ -6327,7 +6325,7 @@ endif
 	@# help early validation of the .zip file while uploading it.
 	$(hide) find $(zip_root)/META | sort >$@.list
 	$(hide) find $(zip_root) -path $(zip_root)/META -prune -o -print | sort >>$@.list
-	$(hide) $(SOONG_ZIP) -d -o $@ -C $(zip_root) -r $@.list
+	$(hide) $(SOONG_ZIP) -L 1 -d -o $@ -C $(zip_root) -r $@.list
 
 .PHONY: target-files-package
 target-files-package: $(BUILT_TARGET_FILES_PACKAGE)
@@ -6395,7 +6393,6 @@ PATH=$(INTERNAL_USERIMAGES_BINARY_PATHS):$(dir $(ZIP2ZIP)):$$PATH \
         --verbose \
         --extracted_input_target_files $(patsubst %.zip,%,$(BUILT_TARGET_FILES_PACKAGE)) \
         --path $(HOST_OUT) \
-        --backup=$(backuptool) \
         $(if $(OEM_OTA_CONFIG), --oem_settings $(OEM_OTA_CONFIG)) \
         $(2) \
         $(BUILT_TARGET_FILES_PACKAGE) $(1)
@@ -6411,16 +6408,6 @@ INTERNAL_OTA_PACKAGE_TARGET := $(PRODUCT_OUT)/$(name).zip
 INTERNAL_OTA_METADATA := $(PRODUCT_OUT)/ota_metadata
 
 $(call declare-0p-target,$(INTERNAL_OTA_METADATA))
-
-ifeq ($(TARGET_BUILD_VARIANT),user)
-    $(INTERNAL_OTA_PACKAGE_TARGET): backuptool := false
-else
-ifneq ($(LINEAGE_BUILD),)
-    $(INTERNAL_OTA_PACKAGE_TARGET): backuptool := true
-else
-    $(INTERNAL_OTA_PACKAGE_TARGET): backuptool := false
-endif
-endif
 
 $(INTERNAL_OTA_PACKAGE_TARGET): KEY_CERT_PAIR := $(DEFAULT_KEY_CERT_PAIR)
 $(INTERNAL_OTA_PACKAGE_TARGET): .KATI_IMPLICIT_OUTPUTS := $(INTERNAL_OTA_METADATA)
@@ -6645,7 +6632,7 @@ $(APPS_ZIP): $(FULL_SYSTEMIMAGE_DEPS)
 	    echo "No apps to zip up. Generating empty apps archive." ; \
 	    a=$$(mktemp /tmp/XXXXXXX) && touch $$a && zip $@ $$a && zip -d $@ $$a; \
 	else \
-	    zip -qjX $@ $$apps_to_zip; \
+	    $(SOONG_ZIP) -qjX $@ $$apps_to_zip; \
 	fi
 
 ifeq (true,$(EMMA_INSTRUMENT))
@@ -7051,7 +7038,7 @@ INTERNAL_EMULATOR_PACKAGE_TARGET := $(PRODUCT_OUT)/$(name).zip
 
 $(INTERNAL_EMULATOR_PACKAGE_TARGET): $(INTERNAL_EMULATOR_PACKAGE_FILES)
 	@echo "Package: $@"
-	$(hide) zip -qjX $@ $(INTERNAL_EMULATOR_PACKAGE_FILES)
+	$(hide) $(SOONG_ZIP) -qjX $@ $(INTERNAL_EMULATOR_PACKAGE_FILES)
 
 endif
 
@@ -7171,7 +7158,7 @@ $(INTERNAL_SDK_TARGET): $(deps)
 	    HOST_OUT_EXECUTABLES=$(HOST_OUT_EXECUTABLES) HOST_OS=$(HOST_OS) \
 	        development/build/tools/sdk_clean.sh $(PRIVATE_DIR) && \
 	    chmod -R ug+rwX $(PRIVATE_DIR) && \
-	    cd $(dir $@) && zip -rqX $(notdir $@) $(PRIVATE_NAME) \
+	    cd $(dir $@) && $(SOONG_ZIP) -rqX $(notdir $@) $(PRIVATE_NAME) \
 	) || ( rm -rf $(PRIVATE_DIR) $@ && exit 44 )
 
 MAIN_SDK_DIR  := $(sdk_dir)

@@ -2908,7 +2908,6 @@ endef
 define sign-package-arg
 $(hide) mv $(1) $(1).unsigned
 $(hide) $(JAVA) -Djava.library.path=$$(dirname $(SIGNAPK_JNI_LIBRARY_PATH)) -jar $(SIGNAPK_JAR) \
-    $(if $(strip $(PRIVATE_CERTIFICATE_LINEAGE)), --lineage $(PRIVATE_CERTIFICATE_LINEAGE)) \
     $(if $(strip $(PRIVATE_ROTATION_MIN_SDK_VERSION)), --rotation-min-sdk-version $(PRIVATE_ROTATION_MIN_SDK_VERSION)) \
     $(PRIVATE_CERTIFICATE) $(PRIVATE_PRIVATE_KEY) \
     $(PRIVATE_ADDITIONAL_CERTIFICATES) $(1).unsigned $(1).signed
@@ -3384,9 +3383,9 @@ endef
 # files and we should not strip.
 define dexpreopt-remove-classes.dex
 $(hide) if (zipinfo $1 '*.dex' 2>/dev/null | grep -v ' stor ' >/dev/null) ; then \
-zip --quiet --delete $(1) classes.dex; \
+$(SOONG_ZIP) --quiet --delete $(1) classes.dex; \
 dex_index=2; \
-while zip --quiet --delete $(1) classes$${dex_index}.dex > /dev/null; do \
+while $(SOONG_ZIP) --quiet --delete $(1) classes$${dex_index}.dex > /dev/null; do \
   let dex_index=dex_index+1; \
 done \
 fi
